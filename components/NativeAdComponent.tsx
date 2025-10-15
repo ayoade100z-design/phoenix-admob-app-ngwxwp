@@ -1,14 +1,30 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, Platform } from 'react-native';
-import { NativeAd, NativeAdView, TestIds } from 'react-native-google-mobile-ads';
-import { AD_UNIT_IDS } from '@/services/AdMobService';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 
+// Only import AdMob on native platforms
+let NativeAd: any = null;
+let NativeAdView: any = null;
+let AD_UNIT_IDS: any = null;
+
+if (Platform.OS !== 'web') {
+  const { NativeAd: NativeAdNative, NativeAdView: NativeAdViewNative } = require('react-native-google-mobile-ads');
+  const AdMobService = require('@/services/AdMobService');
+  NativeAd = NativeAdNative;
+  NativeAdView = NativeAdViewNative;
+  AD_UNIT_IDS = AdMobService.AD_UNIT_IDS;
+}
+
 export default function NativeAdComponent() {
-  const [nativeAd, setNativeAd] = useState<NativeAd | null>(null);
+  const [nativeAd, setNativeAd] = useState<any>(null);
 
   useEffect(() => {
+    // Don't load ads on web
+    if (Platform.OS === 'web') {
+      return;
+    }
+
     const ad = NativeAd.createForAdRequest(AD_UNIT_IDS.native, {
       requestNonPersonalizedAdsOnly: true,
     });
@@ -18,7 +34,7 @@ export default function NativeAdComponent() {
       setNativeAd(ad);
     });
 
-    const unsubscribeError = ad.addAdEventListener('onAdFailedToLoad', (error) => {
+    const unsubscribeError = ad.addAdEventListener('onAdFailedToLoad', (error: any) => {
       console.error('Native ad failed to load:', error);
     });
 
@@ -29,6 +45,11 @@ export default function NativeAdComponent() {
       unsubscribeError();
     };
   }, []);
+
+  // Don't render anything on web
+  if (Platform.OS === 'web') {
+    return null;
+  }
 
   if (!nativeAd) {
     return null;
